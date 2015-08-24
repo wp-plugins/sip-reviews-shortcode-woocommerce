@@ -1,11 +1,11 @@
 <?php 
 
-$src_image = SIP_RS_URI . 'admin/assets/images/';
+$src_image = SIP_RSWC_URL . 'admin/assets/images/';
 
 $extensions = array(
     '1' => (object) array(
         'image_url' => $src_image . 'icon-wpgumby.png',
-        'url'       => SIP_WPGUMBY_THEME_URL . '?utm_source=wordpress.org&utm_medium=SIP-panel&utm_content=v'. SIP_RS_VERSION .'&utm_campaign=' .SIP_RS_UTM_CAMPAIGN,
+        'url'       => SIP_WPGUMBY_THEME_URL . '?utm_source=wordpress.org&utm_medium=SIP-panel&utm_content=v'. SIP_RSWC_VERSION .'&utm_campaign=' .SIP_RSWC_UTM_CAMPAIGN,
         'title'     => SIP_WPGUMBY_THEME,
         'desc'      => __( 'Flat and responsive WooCommerce theme.<br>', 'sip-social-proof' ),
     ),
@@ -14,7 +14,7 @@ $extensions = array(
 ?>
 
 
-<div id="shopitpress-wraper">
+<div id="sip-wraper">
 
 <?php 
     $i = 0;
@@ -25,15 +25,18 @@ $extensions = array(
         $title		 = $extension->title ;
         $description = $extension->desc ; 
  		?>
-		<div class="shopitpress-addon">
+		<div class="sip-addon">
         <h1><?php echo $title ?></h1>
         <p><?php echo $description ?></p>
-			<img class="shopitpress-addon-thumb" src="<?php echo $image_url; ?>" width="300px" height="250px" alt="<?php echo $title; ?>">
-			<div class="shopitpress-addon-action">
-				<a class="active-addon button button-primary " title="<?php echo $title; ?>" href="<?php echo $url; ?>" target="_blank">Learn more</a>
+			<img class="sip-addon-thumb" src="<?php echo $image_url; ?>" width="300px" height="250px" alt="<?php echo $title; ?>">
+			<div class="sip-addon-action">
+				<a class="button button-primary " title="<?php echo $title; ?>" href="<?php echo $url; ?>" target="_blank">Learn more</a>
 			</div>
 		</div> <!-- .shopitpress-addon -->
 		<?php $i++; 
 	} 
 ?>
+<div class="sip-version">
+    <?php $get_optio_version = get_option( 'sip_version_value' ); echo "SIP Version " . $get_optio_version; ?>
+</div>
 </div><!-- .shopitpress -->
