@@ -11,18 +11,32 @@
 	 * @subpackage Sip_Reviews_Shortcode_Woocommerce/public/
 	 */
 	if ( in_array ( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ){
-		
-		add_action ( 'media_buttons_context','add_my_tinymce_media_button' );
-		add_action ( 'admin_footer','shortcode_media_button_popup' );
-		add_action ( 'admin_footer','shortcode_add_shortcode_to_editor' );
+
+		add_action ( 'media_buttons_context','sip_rswc_tinymce_media_button' );
+		add_action ( 'admin_footer','sip_rswc_media_button_popup' );
+		add_action ( 'admin_footer','sip_rswc_add_shortcode_to_editor' );
 		add_shortcode ('woocommerce_reviews', 'sip_review_shortcode_wc' );
-		add_action( 'admin_init',  'settings_init'  );
-		add_action( 'admin_enqueue_scripts' ,  'add_styles_scripts' ); 
+		add_action( 'admin_init',  'sip_rswc_settings_init'  );
+		add_action( 'admin_enqueue_scripts' ,  'sip_rswc_add_styles_scripts' );
+		add_action( 'admin_init', 'sip_rswc_affiliate_register_admin_settings' );
+	}
+
+
+	 /**
+	 * registers credit/affiliate link options
+	 *
+	 *
+	 * @since      1.0.1
+	 */
+	function sip_rswc_affiliate_register_admin_settings() {
+		register_setting( 'sip-rswc-affiliate-settings-group', 'sip-rswc-affiliate-check-box' );
+		register_setting( 'sip-rswc-affiliate-settings-group', 'sip-rswc-affiliate-radio' );
+		register_setting( 'sip-rswc-affiliate-settings-group', 'sip-rswc-affiliate-affiliate-username' );
 	}
 
 
 	/**
-	 * TO get aggregate rating 
+	 * TO get aggregate rating
 	 *
 	 * @since    	1.0.0
 	 * @return 		int
@@ -75,14 +89,14 @@
 	  <?php
 
 	  if( $star_color != "")
-	  	$star_color = "style='color:". $star_color .";'"; 
+	  	$star_color = "style='color:". $star_color .";'";
 
 	  if( $bar_color != "")
 	  	$bar_color = "background-color:".$bar_color .";";
 
 
-		// To check that post id is product or not 
-		if( get_post_type( $id ) == 'product' ) {	
+		// To check that post id is product or not
+		if( get_post_type( $id ) == 'product' ) {
 			ob_start();
 			// to get the detail of the comments etc aproved and panding status
 			$comments_count = wp_count_comments( $id );
@@ -123,12 +137,21 @@
    												<span itemprop="price" content="<?php $get_price = get_post_meta( $id , '_price' ); echo $get_price[0]; ?>"><?php echo get_woocommerce_currency_symbol(); echo $get_price[0]; ?></span>
     										</div>
 											</div>
-								
+
 
 											<h3><?php echo number_format( $result, 2 ); ?> out of 5 stars</h3>
-											<p><?php echo $comments_count->approved ?> reviews</p>
+											<p class="rswc-front-review"><?php echo $comments_count->approved ?>
+												<span class="review-icon-image">reviews		
+													<?php if(get_option('sip-rswc-affiliate-check-box') == "true") { ?>
+														<?php $options = get_option('sip-rswc-affiliate-radio'); ?>
+														<?php if( 'value1' == $options['option_three'] ) { $url = "https://shopitpress.com/?utm_source=referral&utm_medium=credit&utm_campaign=sip-reviews-shortcode-woocommerce" ; } ?>
+														<?php if( 'value2' == $options['option_three'] ) { $url = "https://shopitpress.com/?offer=". esc_attr( get_option('sip-rswc-affiliate-affiliate-username')) ; } ?>
+														<a class="sip-rswc-credit" href="<?php echo $url ; ?>" target="_blank" data-tooltip="These reviews were created with SIP Reviews Shortcode Plugin"></a>
+													<?php } ?>
+												</span>
+											</p>
 										</div>
-										
+
 										<!-- it will show the table at the top -->
 										<div class="product-rating-details">
 											<table>
@@ -203,13 +226,13 @@
 	 * To get full comments
 	 *
 	 * @since    	1.0.0
-	 * @return 		string 	it is return the full lenght of comments lenght limit is 2000 chracters. 
-	 */ 	 
+	 * @return 		string 	it is return the full lenght of comments lenght limit is 2000 chracters.
+	 */
 	function get_comment_excerpt_full( $comment_ID = 0 ) {
     $comment 			= get_comment( $comment_ID );
     $comment_text = strip_tags( $comment->comment_content );
     $blah 				= explode( ' ', $comment_text );
- 
+
     if ( count( $blah ) > 2000 ) {
         $k = 2000;
         $use_dotdotdot = 1;
@@ -217,13 +240,13 @@
         $k = count( $blah );
         $use_dotdotdot = 0;
     }
- 
+
     $excerpt = '';
     for ( $i = 0; $i < $k; $i++ ) {
         $excerpt .= $blah[$i] . ' ';
     }
     $excerpt .= ($use_dotdotdot) ? '&hellip;' : '';
- 
+
     return apply_filters( 'get_comment_excerpt', $excerpt, $comment_ID, $comment );
 	}
 
@@ -231,13 +254,13 @@
 	 * To get limited text comments to dispaly
 	 *
 	 * @since    	1.0.0
-	 * @return 		string 	it is return the 35 chracters of comments 
+	 * @return 		string 	it is return the 35 chracters of comments
 	 */
 	function get_comment_excerpt_trim( $comment_ID = 0 ) {
     $comment 			= get_comment( $comment_ID );
     $comment_text = strip_tags($comment->comment_content);
     $blah 				= explode( ' ', $comment_text );
- 
+
     if ( count ( $blah ) > 35 ) {
         $k = 35;
         $use_dotdotdot = 1;
@@ -245,13 +268,13 @@
         $k = count( $blah );
         $use_dotdotdot = 0;
     }
- 
+
     $excerpt = '';
     for ( $i = 0; $i < $k; $i++ ) {
         $excerpt .= $blah[$i] . ' ';
     }
     $excerpt .= ($use_dotdotdot) ? '<a style="cursor:pointer" id="comment-'.$comment_ID.'">&nbsp;Read More</a>' : '';
- 
+
     return apply_filters( 'get_comment_excerpt', $excerpt, $comment_ID, $comment );
 	}
 
@@ -265,16 +288,16 @@
 		global $wpdb, $post;
 		$query 							= 	"SELECT c.* FROM {$wpdb->prefix}posts p, {$wpdb->prefix}comments c WHERE p.ID = {$id} AND p.ID = c.comment_post_ID AND c.comment_approved > 0 AND p.post_type = 'product' AND p.post_status = 'publish' AND p.comment_count > 0 ORDER BY c.comment_date DESC";
 		$comments_products 	= 	$wpdb->get_results($query, OBJECT);
-		$out_reviews				= 	"";	
+		$out_reviews				= 	"";
 		if ( $comments_products ) {
-			foreach ( $comments_products as $comment_product ) {			
+			foreach ( $comments_products as $comment_product ) {
 				$id_ 						= 	$comment_product->comment_post_ID;
 				$name_author 		= 	$comment_product->comment_author;
 				$comment_id  		= 	$comment_product->comment_ID;
 				$comment_date  	= 	get_comment_date( 'M d, Y', $comment_id );
 				$_product 			= 	get_product( $id_ );
 				$rating 				=  	intval( get_comment_meta( $comment_id, 'rating', true ) );
-				$rating_html 		= 	$_product->get_rating_html( $rating );	
+				$rating_html 		= 	$_product->get_rating_html( $rating );
 				$user_id	 			=		$comment_product->user_id;
 				$votes 					=		"";
 
@@ -288,28 +311,28 @@
   			$review_title_color 			= ( $options['review_title_color'] != "" ) ? sanitize_text_field( $options['review_title_color'] ) : '';
 
 			  if( $star_color != "")
-	  			$star_color = "style='color:". $star_color .";'"; 	
-	  		$button = 'style="';		  
+	  			$star_color = "style='color:". $star_color .";'";
+	  		$button = 'style="';
 	  		if( $load_more_button != "")
-	  			$button .= 'background-color:'. $load_more_button .';'; 			  
+	  			$button .= 'background-color:'. $load_more_button .';';
 	  		if( $load_more_text != "")
-	  			$button .= 'color:'. $load_more_text .';'; 
+	  			$button .= 'color:'. $load_more_text .';';
 				$button .= '"';
 
 			  if( $review_title_color != "")
 	  			$review_title_color = "style='color:". $review_title_color .";'";
 
-				$review_background = 'style="';		  
+				$review_background = 'style="';
 	  		if( $review_background_color != "")
-	  			$review_background .= 'background-color:'. $review_background_color .';'; 			  
+	  			$review_background .= 'background-color:'. $review_background_color .';';
 	  		if( $review_body_text_color != "")
-	  			$review_background .= 'color:'. $review_body_text_color .';'; 
+	  			$review_background .= 'color:'. $review_body_text_color .';';
 				$review_background .= '"';
-				
+
 				// to check the woocommerce review pro plugin is active or not
 				// if active then show the vote which is given by user
 				$Woo_Reviews_Shortcode = new SIP_Reviews_Shortcode_WC;
-				if( $Woo_Reviews_Shortcode->product_reviews_pro() ) {  
+				if( $Woo_Reviews_Shortcode->product_reviews_pro() ) {
 					$negative_votes =  intval( get_comment_meta( $comment_id, 'negative_votes', true ) );
 					$positive_votes =  intval( get_comment_meta( $comment_id, 'positive_votes', true ) );
 					$votes 					= '<div class="woocommerce-page">
@@ -323,29 +346,29 @@
 															</div>
 														</div>';
 				}
-			
+
 				$out_reviews 		.= '<li itemprop="review" itemscope="" itemtype="http://schema.org/Review" class="review" id="li-comment-'.$comment_id.'">
-															<div id="comment-'.$comment_id.'" class="comment_container" '.$review_background.'>	
+															<div id="comment-'.$comment_id.'" class="comment_container" '.$review_background.'>
 																<!-- only for schema -->
 																<div itemprop="itemReviewed" itemscope="" itemtype="http://schema.org/Product" style="display:none;">
 																	<span itemprop="name">'.$title.'</span>
 																</div>
-			
+
 																<div class="comment-text">
 																	<a href="#" '.$star_color. '>'.$rating_html.'</a>
 																	<p class="meta">
-																		<strong itemprop="author" '.$review_title_color.'>'.$name_author.' - 
+																		<strong itemprop="author" '.$review_title_color.'>'.$name_author.' -
 																			<time itemprop="datePublished" datetime="'.$comment_date.'">'.$comment_date.'</time>
-																		</strong>	
+																		</strong>
 																	</p>
-																
+
 																	<div itemprop="description" class="description">
 																		<div id="hide-'.$comment_id.'">
 																			<p>'.nl2br( get_comment_excerpt_trim( $comment_id ) ).'</p>
 																		</div>
 																		<p style="display:none;" id="comment-'.$comment_id.'-full">'.nl2br( get_comment_excerpt_full( $comment_id ) ).'</p>
-						
-																		'.$votes.'						
+
+																		'.$votes.'
 																	</div>
 																</div><!-- .comment-text -->
 															</div><!-- .comment_container -->
@@ -358,23 +381,23 @@
 															    jQuery("#hide-'.$comment_id.'").hide();
 															   });
 															</script>';
-			}//end of lop 
-		} //end of if condition 
+			}//end of lop
+		} //end of if condition
 		if ( $out_reviews != '' ) {
-			$out_reviews = '<ul id="comments_list" class="commentlist">' . $out_reviews . '</ul><div id="load_more"><button '. $button .' type="button">Load More</button></div>'; 
+			$out_reviews = '<ul id="comments_list" class="commentlist">' . $out_reviews . '</ul><div id="load_more"><button '. $button .' type="button">Load More</button></div>';
 		} else {
-			$out_reviews = '<ul class="commentlist"><li><p class="content-comment">'. __('No products reviews.') . '</p></li></ul>'; 
+			$out_reviews = '<ul class="commentlist"><li><p class="content-comment">'. __('No products reviews.') . '</p></li></ul>';
 		}
-		echo $out_reviews;		
+		echo $out_reviews;
 	}
-	 
+
 	/**
 	 * add the button to the tinymce editor
 	 *
 	 * @since    	1.0.0
 	 */
-	function add_my_tinymce_media_button( $context ) {
-		return $context .= __("<a href=\"#TB_inline?width=180&inlineId=shortcode_popup&width=540&height=153\" class=\"button thickbox\" id=\"shortcode_popup_button\" title=\"Product Reviews\">Produtc Reviews</a>");
+	function sip_rswc_tinymce_media_button( $context ) {
+		return $context .= __("<a href=\"#TB_inline?width=180&inlineId=shortcode_popup&width=540&height=153\" class=\"button thickbox\" id=\"shortcode_popup_button\" title=\"Product Reviews\">Product Reviews</a>");
 	}
 
 	/**
@@ -382,13 +405,13 @@
 	 *
 	 * @since    	1.0.0
 	 */
-	function shortcode_media_button_popup() { ?>
+	function sip_rswc_media_button_popup() { ?>
   	<div id="shortcode_popup" style="display:none;">
     	<div class="wrap">
       	<div>
         	<h2>Insert Product Reviews</h2>
         	<div class="shortcode_add">
-        	
+
         		<table>
         			<tr>
         				<th><label for="woocommerce_review_id">Product ID : </label></th>
@@ -402,7 +425,7 @@
 	        			<th><label for="woocommerce_review_comments">No. of Reviews : </label></th>
 	        			<td>
 	        				<input type="text" id="woocommerce_review_comments">
-	        				<button class="button-primary" id="id_of_button_clicked">Add ID</button>
+	        				<button class="button-primary" id="id_of_button_clicked">Insert Reviews</button>
 	        			</td>
 	        		</tr>
 	        	</table>
@@ -419,7 +442,7 @@
 	 *
 	 * @since    	1.0.0
 	 */
-	function shortcode_add_shortcode_to_editor() { ?>
+	function sip_rswc_add_shortcode_to_editor() { ?>
 		<script>
 			jQuery('#id_of_button_clicked ').on('click',function(){
 			  var shortcode_id 				= jQuery('#woocommerce_review_id').val();
@@ -444,141 +467,41 @@
 	 *
 	 * @since    	1.0.0
 	 */
-	
-	function sip_rs_settings_page_ui() { ?>
 
-	<div class="sip-rs-wrap">
-	  <div class="sip-rs-settings-header">
-	  	<div class="sip-rs-header-left">
-	  		<div class="divider rs"></div>
-	  		<h1 class="rs"><?php echo SIP_RS_NAME ; ?></h1>
-	  		<h3>Display product reviews in any post/page with a shortcode.</h3>
-	  	</div>
-	  	<div class="sip-rs-header-right">
-	  		<img class="sip-rs-header-img" src="<?php echo SIP_RS_URI ?>admin/assets/images/icon-wooreviews.png">
-	  	</div>
-	  </div>
+	function sip_rswc_settings_page_ui() { ?>
 
-		<div class="container">
-	  	<div class="accordion">
-	    	<h3 class="panel-title">Usage</h3>
-	    	<div class="panel-content">
-					<div style="display: block;"><br>
-					  <p style="padding:10px 20px"><strong class="sip-sp-strong">Shortcode usage example:</strong> [woocommerce_reviews id="2075" product_title="My Awesome Product" no_of_reviews="5" ]</p>
-					  <p style="padding:10px 20px"><strong>id</strong> (optional) is the ID of the WooCoommerce product you want to display. [woocommerce_reviews] without id input will show the reviews of the current product if applicable.<br>
-					  <strong>product_title</strong> (optional) is the name of the product you want to display. This is used for Schema only (by default is the product name in WooCommerce).<br>
-					  <strong>no_of_reviews</strong> (optional) is the number of reviews loaded per page (default = 5). Additional reviews can be loaded after clicking in "Load more" button.<br>
-					  </p>
-					  <p style="padding:10px 20px">SIP Reviews Shortcode for WooCommerce is fully-compatible with Schema.org, allowing you to display product ratings directly from Google's results. You may test your Schema at <a href="https://developers.google.com/structured-data/testing-tool/">Google Structured Data Testing Tool</a>.</p>
-	     		</div>
-	     	</div>
-	  	</div>
-		</div><!-- .wrap -->
-	</div>
+	<div class="sip-tab-content">
+		  <?php screen_icon(); ?>
+		  <h2>Custom Color Settings</h2>
+		  <form id="wp-color-picker-options" action="options.php" method="post">
+		    <?php color_input(); ?>
+		    <?php settings_fields( 'wp_color_picker_options' ); ?>
+		    <?php do_settings_sections( 'wp-color-picker-settings' ); ?>
 
-	<div class="wrap">
-	  <?php screen_icon(); ?>
-	  <h2>Custom Color Settings</h2>
-	  <form id="wp-color-picker-options" action="options.php" method="post">
-	    <?php color_input(); ?>
-	    <?php settings_fields( 'wp_color_picker_options' ); ?>
-	    <?php do_settings_sections( 'wp-color-picker-settings' ); ?>
-	    
-	    <p class="submit">
-	      <input id="wp-color-picker-submit" name="Submit" type="submit" class="button-primary" value="<?php _e( 'Save Color' ); ?>" />
-	    </p>
-	    
-	  </form>
-	</div>
+		    <p class="submit">
+		      <input id="wp-color-picker-submit" name="Submit" type="submit" class="button-primary" value="<?php _e( 'Save Color' ); ?>" />
+		    </p>
 
-	<script type="text/javascript">
+		  </form>
+		</div>
 		
+		<!-- affiliate/credit link -->
+		<?php include( SIP_RSWC_DIR . 'admin/ui/affiliate.php'); ?>
+	<?php
 
-		// Hiding the panel content. If JS is inactive, content will be displayed
-	  jQuery( '.panel-content' ).hide();
-
-	  // Preparing the DOM
-	  
-	  // -- Update the markup of accordion container 
-	  jQuery( '.accordion' ).attr({
-	    role: 'tablist',
-	    multiselectable: 'true'
-	   });
-
-	  // -- Adding ID, aria-labelled-by, role and aria-labelledby attributes to panel content
-	  jQuery( '.panel-content' ).attr( 'id', function( IDcount ) { 
-	    return 'panel-' + IDcount; 
-	  });
-	  jQuery( '.panel-content' ).attr( 'aria-labelledby', function( IDcount ) { 
-	    return 'control-panel-' + IDcount; 
-	  });
-	  jQuery( '.panel-content' ).attr( 'aria-hidden' , 'true' );
-	  // ---- Only for accordion, add role tabpanel
-	  jQuery( '.accordion .panel-content' ).attr( 'role' , 'tabpanel' );
-	  
-	  // -- Wrapping panel title content with a <a href="">
-	  jQuery( '.panel-title' ).each(function(i){
-	    
-	    // ---- Need to identify the target, easy it's the immediate brother
-	    $target = jQuery(this).next( '.panel-content' )[0].id;
-	    
-	    // ---- Creating the link with aria and link it to the panel content
-	    $link = jQuery( '<a>', {
-	      'href': '#' + $target,
-	      'aria-expanded': 'false',
-	      'aria-controls': $target,
-	      'id' : 'control-' + $target
-	    });
-	    
-	    // ---- Output the link
-	    jQuery(this).wrapInner($link);  
-	    
-	  });
-
-	  // Optional : include an icon. Better in JS because without JS it have non-sense.
-	  jQuery( '.panel-title a' ).append('<span class="icon"><b>+<b></span>');
-
-	  // Now we can play with it
-	  jQuery( '.panel-title a' ).click(function() {
-	    
-	    if (jQuery(this).attr( 'aria-expanded' ) == 'false'){ //If aria expanded is false then it's not opened and we want it opened !
-	      
-	      // -- Only for accordion effect (2 options) : comment or uncomment the one you want
-	      
-	      // ---- Option 1 : close only opened panel in the same accordion
-	      //      search through the current Accordion container for opened panel and close it, remove class and change aria expanded value
-	      jQuery(this).parents( '.accordion' ).find( '[aria-expanded=true]' ).attr( 'aria-expanded' , false ).removeClass( 'active' ).parent().next( '.panel-content' ).slideUp(200).attr( 'aria-hidden' , 'true');
-
-	      // Option 2 : close all opened panels in all accordion container
-	      //$('.accordion .panel-title > a').attr('aria-expanded', false).removeClass('active').parent().next('.panel-content').slideUp(200);
-	      
-	      // Finally we open the panel, set class active for styling purpos on a and aria-expanded to "true"
-	      jQuery(this).attr( 'aria-expanded' , true ).addClass( 'active' ).parent().next( '.panel-content' ).slideDown(200).attr( 'aria-hidden' , 'false');
-
-	    } else { // The current panel is opened and we want to close it
-
-	      jQuery(this).attr( 'aria-expanded' , false ).removeClass( 'active' ).parent().next( '.panel-content' ).slideUp(200).attr( 'aria-hidden' , 'true');;
-
-	    }
-	    // No Boing Boing
-	    return false;
-	  });
-	</script>
-	<?php 
-
-	} 
+	}
 
 	/**
 	 * Register settings, add a settings section, and add our color fields.
 	 *
 	 * @since    	1.0.0
 	 */
-	function settings_init(){
+	function sip_rswc_settings_init(){
 
 	  register_setting(
 	    'wp_color_picker_options',
 	    'color_options',
-	    'validate_options' 
+	    'validate_options'
 	  );
 	}
 
@@ -596,7 +519,7 @@
 	  $review_title_color 			= ( $options['review_title_color'] != "" ) ? sanitize_text_field( $options['review_title_color'] ) : '';
 	  $load_more_button 				= ( $options['load_more_button'] != "" ) ? sanitize_text_field( $options['load_more_button'] ) : '';
 	  $load_more_text 					= ( $options['load_more_text'] != "" ) ? sanitize_text_field( $options['load_more_text'] ) : '';
-	   
+
 	 ?>
 	<table>
 		<tr>
@@ -650,7 +573,7 @@
 			</td>
 		</tr>
 	</table>
-	 <?php   
+	 <?php
 	}
 
 	/**
@@ -667,7 +590,7 @@
 	  $valid['review_title_color'] 			= sanitize_text_field( $input['review_title_color'] );
 	  $valid['load_more_button'] 				= sanitize_text_field( $input['load_more_button'] );
 	  $valid['load_more_text'] 					= sanitize_text_field( $input['load_more_text'] );
-	  
+
 	  return $valid;
 	}
 
@@ -676,10 +599,10 @@
 	 *
 	 * @since    	1.0.0
 	 */
-	function add_styles_scripts(){
+	function sip_rswc_add_styles_scripts(){
 	  //Access the global $wp_version variable to see which version of WordPress is installed.
 	  global $wp_version;
-	  
+
 	  //If the WordPress version is greater than or equal to 3.5, then load the new WordPress color picker.
 	  if ( 3.5 <= $wp_version ){
 	    //Both the necessary css and javascript have been registered already by WordPress, so all we have to do is load them with their handle.
@@ -692,8 +615,7 @@
 	    wp_enqueue_style( 'farbtastic' );
 	    wp_enqueue_script( 'farbtastic' );
 	  }
-	  
-	  //Load our custom Javascript file
-	  wp_enqueue_script( 'wp-color-picker-settings', plugin_dir_url(__FILE__) . 'assets/lib/js/settings.js' );
-	}
 
+	  //Load our custom Javascript file
+	  wp_enqueue_script( 'wp-color-picker-settings', SIP_RSWC_URL . 'public/assets/lib/js/settings.js' );
+	}
